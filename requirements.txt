@@ -4,18 +4,20 @@
 # to and which bugs/ report it closes, and re-run every phase whose outputs
 # could change. Never loosen it to ">=" for day-to-day work.
 #
-# INSTALL SOURCE (2026-09-19): 0.3.0 was NOT resolvable from PyPI in the
-# session that scaffolded this repo - `pip index versions
-# smart-spatial-system` returned "no matching distribution", and pypi.org
-# itself was blocked by that session's egress policy, so a negative result
-# there is not proof it is unpublished. Its sibling repo pinned 0.2.2 from
-# a tagged commit rather than PyPI. If the plain pin below does not
-# resolve, install from the tag instead and leave the pin line as the
-# record of the intended version:
+# INSTALL SOURCE (confirmed 2026-09-19): v0.3.0 is a real tag at
+# github.com/arazshah/smart_spatial_system (pyproject.toml's version field
+# reads "0.3.0" at that tag) - confirmed by cloning it directly, which this
+# session could not do the first time it tried (see git history) but could
+# once network access was widened. PyPI itself, however, stayed blocked
+# (403) even after that - `pip install` cannot resolve build dependencies
+# from here, so this pin is verified-real but still unverified-installable
+# in this environment. Use the tag install below until someone confirms the
+# plain pin resolves on PyPI from an environment that can actually reach it:
 #
 #   pip install "smart-spatial-system[raster,pdf] @ git+https://github.com/arazshah/smart_spatial_system.git@v0.3.0"
 #
-# Delete this note once `pip install -r requirements.txt` works unmodified.
+# Delete this note once `pip install -r requirements.txt` has actually been
+# run successfully somewhere and the plain pin below is confirmed to work.
 smart-spatial-system==0.3.0
 
 # Required by the task spec, and used directly by the data-prep and

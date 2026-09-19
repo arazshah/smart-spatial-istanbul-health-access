@@ -43,22 +43,51 @@ plan.
 
 ### Arm 1 — rule-based (deterministic by construction)
 
-An explicit operation plan, written out rather than generated:
+**Verified against 0.3.0 source 2026-09-19** (`orchestrator/planning/op_catalog.py`
+— every op below is a real, planner-reachable `op_name`; this replaces an
+earlier draft of this plan that used a wrong operation for step 3):
 
 1. `crs_transform` **each** layer individually, 4326 → 32635. Assert the CRS
    of every input immediately before any distance call.
-2. `nearest_neighbor` (mahalle → hospitals) for the polygon-boundary
-   distance, and a second pass on mahalle **centroids** for the
-   centroid distance. Both are reported; the centroid figure is the honest
-   one for a health-access question, because polygon-to-point returns `0.0`
-   for any mahalle that happens to contain a facility.
-3. `zonal_statistics` for the per-mahalle facility count (how many
-   facilities fall inside, and within the threshold buffer) — this is what
-   separates "has one clinic just inside the border" from "is genuinely well
-   served".
+2. `spatial_nearest` (mahalle → hospitals; `nearest_neighbor` is a
+   confirmed alias, prefer `spatial_nearest` per the catalog's own note) for
+   the polygon-boundary distance, and a second pass on mahalle **centroids**
+   for the centroid distance. Both are reported; the centroid figure is the
+   honest one for a health-access question, because polygon-to-point
+   returns `0.0` for any mahalle that happens to contain a facility. Pass
+   `source_crs`/`target_crs` explicitly — the catalog notes this lets
+   `find_nearest_neighbors` raise on a CRS mismatch instead of silently
+   returning a nonsense planar distance (Vienna's candidate Bug 5, if still
+   unhandled at 0.3.0 — check `plugins/distance_calculator.py` and file a
+   `bugs/` report if it isn't).
+3. **Not `zonal_statistics`** — confirmed from source to be a
+   raster-over-polygon operation (`calculate_zonal_statistics`, takes a
+   `raster` input; "mean NDVI per district" is its own example use case).
+   It cannot count point features. For the per-mahalle facility count, use
+   `filter_points_in_polygon` (hospitals against mahalle, true point-in-
+   polygon, not bbox) or `spatial_join` (predicate `within`/`contains`),
+   then aggregate the per-mahalle count in the notebook. This is what
+   separates "has one clinic just inside the border" from "is genuinely
+   well served".
 4. Threshold at 2000 m → boolean `underserved`.
-5. Dissolve the underserved mahalle into contiguous underserved regions, so
-   the result is a map of *areas*, not a list of isolated polygons.
+5. Dissolve the underserved mahalle into contiguous underserved regions —
+   **⚠️ `dissolve_features` (`plugins/dissolve_aggregator.py`) exists as a
+   registered capability but is confirmed absent from `op_catalog.py`'s
+   `OP_CATALOG`**, so it is not a planner-reachable `op_name` and
+   `s3geo.query()` / `QuerySpec` can never produce it (only a param of
+   `buffer`, `dissolve: true`, which merges overlapping *buffers*, not
+   arbitrary polygons by attribute). This arm can still call
+   `dissolve_aggregator.dissolve_features` **directly as a plugin
+   function**, bypassing the planner — that's fine for a rule-based arm
+   that is allowed to call plugins directly. But it means **Arm 2 cannot
+   ask for this step at all**, structurally, however good its prompt is.
+   Name this explicitly in the paper as a capability asymmetry between the
+   two arms, not a fair comparison point — don't score the LLM arm down for
+   never producing a dissolve it has no way to request. (Separately: this
+   reachability gap matches a pattern `op_catalog.py`'s own docstring
+   already names for several source-loading plugins — likely known to
+   upstream already, worth a quick issue/PR upstream rather than a `bugs/`
+   report, which is for behaviour that's wrong, not merely unexposed.)
 6. `build_report` → the underserved table.
 
 Repeat 4–6 at **1000 / 1500 / 2000 m** so the headline count is visibly a
@@ -66,10 +95,24 @@ function of the threshold rather than a fact.
 
 ### Arm 2 — LLM-planned
 
-`s3geo.query()` (or `LLMQuerySpecGenerator` directly, which is what the
-Vienna repo used and what makes the generated `QuerySpec` inspectable) gets
-a natural-language version of the same question and the same two layers as
-input. The raw query string:
+**Confirmed 2026-09-19: `s3geo.query(raw_query, *, layers, context=None,
+system_hints=None)` is real and new in 0.3.0** (`s3geo/__init__.py`) — a
+thin wrapper that wires up exactly `OpenAICompatibleLLMClient` +
+`LLMQuerySpecGenerator` + `DeterministicPlanner` + `CapabilityRegistry` +
+`RegistryCapabilityResolver` + `DagExecutor`, still directly usable
+individually (which is what the Vienna repo, on 0.2.x, used before this
+wrapper existed — use `s3geo.query()` here since it's now the documented
+one-call path and returns `.goal`/`.operations`/`.output` directly, closer
+to what phase 4/5's extraction needs). `layers` accepts GeoJSON dicts or
+`GeoDataFrame`s directly. Note: there is a *second*, older/separate planning
+path in this codebase (`orchestrator/llm_intent_planner.py`, used by
+`application/services/llm_intent_adapter.py` for a different, REST-API-
+facing flow, not `s3geo.query()`) — do not confuse the two; it has its own
+op vocabulary (including, notably, `dissolve_features` — reachable there
+but not through `s3geo.query()`, see Arm 1 step 5) and is out of scope here.
+
+It gets a natural-language version of the same question and the same two
+layers as input. The raw query string:
 
 - states the question, the two layers and the city;
 - **deliberately omits** the 2000 m threshold, the CRS, the centroid-vs-
@@ -108,7 +151,7 @@ caveats and licensing in [`data/README.md`](../data/README.md).
 | # | Phase | Output | Network? | LLM key? |
 |---|---|---|---|---|
 | 0 | Repository skeleton | this repo — **DONE (2026-09-19)** | no | no |
-| 1 | Data acquisition | `data/raw/` | **yes** (Overpass) | no |
+| 1 | Data acquisition | `data/raw/` — **DONE (2026-09-19)**: 972 hospitals/clinics, 964 mahalle | **yes** (Overpass) | no |
 | 2 | Data prep + problem definition | `notebooks/01_data_and_problem.ipynb`, `data/processed/` | no | no |
 | 3 | Rule-based arm | `notebooks/02_rule_based_arm.ipynb`, `results/rule_based_*.{csv,json}` | no | no |
 | 4 | LLM arm (N=20) | `notebooks/03_llm_arm.ipynb`, `results/llm_runs/` | **yes** | **yes** |
@@ -120,13 +163,24 @@ Phases 2, 3, 5, 6, 7 run entirely offline once `data/processed/` exists,
 using only the pinned package. Phases 1 and 4 are the only ones needing
 network; 4 is the only one needing a key.
 
-**Phase 0 exit note (2026-09-19):** the session that built this skeleton
-could reach neither `overpass-api.de` (HTTP 403 from the egress proxy) nor
-PyPI, and had no credentials for `github.com/arazshah/smart_spatial_system`,
-so phase 1 onward is blocked there. Nothing was faked to paper over it and
-no result files exist. See `CLAUDE.md` → "Network and secrets" for the three
-ways to unblock phase 1, and `requirements.txt` for the pin's install
-source.
+**Phase 0 exit note (2026-09-19):** the first session that built this
+skeleton could reach neither `overpass-api.de` nor PyPI, and had no
+credentials for `github.com/arazshah/smart_spatial_system`. A follow-up
+session the same day, after the user widened network access, found:
+Overpass reachable via the `overpass.kumi.systems` mirror (the primary
+`overpass-api.de` host still resets the connection; the mirror is a shared
+public instance and needs retries under load — see `data/README.md`
+"Fetched"); `github.com/arazshah/smart_spatial_system` readable via plain
+unauthenticated `git clone` (its GitHub *API* stays blocked, but the repo
+itself is public over git); **PyPI still blocked** (`403`, both directly
+and through the proxy) — `pip install` cannot resolve `smart-spatial-system`
+or its build dependencies from here, so the package still is not actually
+*installed* anywhere phases 2+ could use it, only read. **Git push to this
+repo's own GitHub remote is also still blocked** ("not in this session's
+authorized repository set") — a separate authorization from data network
+access; phase 1's commits exist locally / as a delivered bundle, not
+pushed. See `CLAUDE.md` → "Network and secrets" for what each of these
+means for the phases ahead.
 
 ## Expected outputs
 
@@ -161,24 +215,30 @@ source.
 
 ## Open decisions
 
-- **⚠️ The mahalle `admin_level` is not settled, and phase 1 cannot start
-  until it is.** The brief specifies `admin_level=10`; two independent
-  OSM-derived Turkish datasets use `admin_level=8` for mahalle. Run
-  `python scripts/fetch_overpass.py --probe` and let the database decide —
-  see `data/README.md` caveat 6. If OSM's mahalle coverage for İstanbul is
-  materially incomplete at whichever level is correct, the unit of analysis
-  has to be reconsidered (ilçe at level 6, ~39 units, is the obvious
-  fallback, at a real cost in resolution) — decide that explicitly rather
-  than quietly mapping a partial set.
-- **Every `smart_spatial_system` API name in this plan is unverified against
-  0.3.0.** `nearest_neighbor`, `zonal_statistics`, `crs_transform`,
-  `build_report`, `s3geo.query()`, `LLMQuerySpecGenerator` are carried over
-  from the Vienna study's 0.2.x notes; the session that wrote this plan had
-  no read access to the package. In particular `zonal_statistics` is a
-  raster-over-polygon operation in most spatial stacks, and counting
-  *points* inside polygons may want a different operation entirely. Confirm
-  the operation names and signatures against 0.3.0's source before writing
-  arm 1, and correct this plan in the same commit.
+- **✅ Resolved 2026-09-19: mahalle is `admin_level=8`.** Probed against
+  the live database — see `data/README.md` caveat 6. 964 mahalle fetched
+  clean (0 skipped rings), so the "unit of analysis needs reconsidering"
+  fallback (ilçe at level 6, ~39 units) did not end up needed.
+- **✅ Resolved 2026-09-19: operation names verified against 0.3.0 source**
+  (`orchestrator/planning/op_catalog.py`, read directly — see Arm 1/Arm 2
+  above for the corrections this produced). `zonal_statistics` *was* the
+  wrong operation, exactly as flagged; replaced with `filter_points_in_polygon`
+  / `spatial_join` + notebook-side aggregation. `dissolve_features` is a
+  real capability but not planner-reachable through `s3geo.query()` — a
+  structural limit on Arm 2, not a bug to route around.
+- **Which counting operation (`filter_points_in_polygon` vs. `spatial_join`)
+  to use for step 3 is not yet decided** — both are real, catalog-registered
+  operations that could work; pick one when writing `notebooks/02_rule_based_arm.ipynb`
+  based on which gives a cleaner per-mahalle count, and say which and why in
+  that notebook rather than leaving both as live options in the paper.
+- **Whether Vienna's candidate CRS-mismatch bug (its Bug 5, upstream
+  `plugins/distance_calculator.py`) is still present at 0.3.0 is unchecked.**
+  The op catalog's own docstring for `_NEAREST_PARAM_MAP` claims passing
+  `source_crs` *and* `target_crs` lets the op raise on mismatch instead of
+  silently computing nonsense — read that claim in the docstring, not yet
+  verified by triggering it. Verify with a deliberately-mismatched-CRS smoke
+  test before trusting it in Arm 1, and file a `bugs/` report if it doesn't
+  hold.
 
 - **N and temperature.** N=20 at 0.1, inherited from the Vienna study.
   Revisit once early variance is visible — a set-valued output may be more

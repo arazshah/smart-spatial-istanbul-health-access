@@ -17,16 +17,24 @@ One file per bug, in the shape `smart_spatial_system`'s own `CHANGELOG.md`
 uses for its bug entries: **root cause**, **reproduction**, and a proposed
 **two-part fix (plugin layer + LLM-prompt layer)**.
 
-> ⚠️ **Verify the template before filing the first real report.** The three
-> required sections come from this repo's brief and from how the Vienna
-> sibling's `requirements.txt` describes upstream's 0.2.2 entry (a worked
-> `_domain_guidance()` example *plus* a new
-> `_validate_score_features_field_chaining()` check — i.e. exactly the
-> prompt-layer + plugin-layer pairing). The exact headings, ordering and
-> wording below were **not** verifiable from the session that wrote this
-> file, which had no read access to `smart_spatial_system`. Open its real
-> `CHANGELOG.md`, copy the shape of an existing entry, and correct this
-> template in the same commit as the first report.
+> **Checked against the real `CHANGELOG.md` (2026-09-19, `v0.3.0` tag).**
+> Upstream does **not** use literal `Root cause:`/`Reproduction:` headers —
+> it's plain [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) prose
+> under `### Added`/`### Changed`/`### Fixed`. But the *substance* the brief
+> asked for is genuinely there in every LLM-related fix: e.g. `[0.2.2]`
+> narrates the exact mechanism (plans fanning distance calculations out from
+> the original vector instead of chaining them, so scores silently landed on
+> the wrong, unrelated field), then pairs **a plugin-layer fix**
+> (`LLMQuerySpecGenerator.generate()` now validates every `score_features`
+> factor is reachable through its op's own input chain, raising
+> `LLMSpecGenerationError` by name instead of silently scoring 0) **with an
+> LLM-prompt-layer fix** (`_domain_guidance()` gained a worked wrong-vs-right
+> example). That pairing — a validator that turns the failure loud, plus
+> prompt guidance so the model stops generating it — is what this
+> repository's explicit-header template below makes scannable for a student
+> bug tracker; it is a structured rendering of upstream's habit, not a
+> literal copy of its prose format. Keep the headers; don't claim they're
+> copied verbatim from upstream.
 
 The two-part fix is the part that is easy to shortchange and the part that
 matters most. Most failures in this family have both a **deterministic**

@@ -76,33 +76,70 @@ Concretely, in this repository:
 
 ## Current state
 
-**Phase 0 (repository skeleton) is done. Nothing has been run yet — there
-are no results in this repo, and `data/raw/` is empty.**
+**Phase 0 (skeleton) and Phase 1 (data acquisition) are done (2026-09-19).**
+`data/raw/` has 972 hospitals/clinics (406 hospital, 566 clinic) and 964
+mahalle boundaries (955 Polygon, 9 MultiPolygon, 0 skipped) — see
+`data/README.md` "Fetched". `data/processed/` is still empty; Phase 2
+(`notebooks/01_data_and_problem.ipynb`) has not run.
 
-Phase 1 (data acquisition) is blocked in the cloud session this repo was
-scaffolded from: `overpass-api.de` is refused by the egress proxy (HTTP
-403 on CONNECT), as are `nominatim.openstreetmap.org` and `pypi.org`.
-Phases 2+ are additionally blocked on installing the pin — `0.3.0` is not
-on PyPI, and `github.com/arazshah/smart_spatial_system` needs credentials
-that session did not have. See "Network and secrets" for the three ways
-around this. **Check `paper/PLAN.md`'s phase table and the actual contents
-of `data/` and `results/` before assuming anything above is still current;
-this file is not updated every session.**
+**Three environment facts, current as of 2026-09-19, likely to still matter
+next session:**
 
-## Before phase 1 — two things to settle, not assume
+1. Overpass works via the `overpass.kumi.systems` mirror, not the primary
+   `overpass-api.de` host (connection reset at TLS). The mirror is a shared
+   public instance — expect `504`/timeouts under load and retry with
+   patience, not a smaller AOI. **A `200 OK` with a suspiciously small
+   `elements` array is not proof of a real empty result** — this session hit
+   exactly that once; see `data/README.md` "Fetched" before trusting a
+   surprising count.
+2. `github.com/arazshah/smart_spatial_system` is readable with a plain
+   `git clone` (its GitHub *API* is still blocked — don't rely on `gh` or
+   the API for it, clone it). **PyPI is still blocked** (`403`), so the
+   package can be *read* from a git clone but not actually *installed* from
+   here — `pip install` fails on build dependencies it can't fetch. Phases
+   2+ still can't execute in this environment; the plan below is now
+   verified against real 0.3.0 source, but nothing has run it yet.
+3. **`git push` to this repo's own GitHub remote is blocked** — a separate
+   authorization from data network access ("not in this session's
+   authorized repository set"). Confirmed still blocked after the network
+   grant that fixed #1/#2. Commits exist locally / delivered as a bundle;
+   check whether `origin/main` actually has them before assuming a push
+   succeeded.
 
-1. **The mahalle `admin_level`.** The brief says 10; the OSM evidence points
-   at 8. Run `python scripts/fetch_overpass.py --probe` and take the
-   database's answer. `data/README.md` caveat 6 has the detail. A zero-
-   element response is this, or the dotted `İ` (caveat 1) — never a reason
-   to shrink the AOI.
-2. **The package's actual API.** Every operation name in `paper/PLAN.md`
-   (`nearest_neighbor`, `zonal_statistics`, `crs_transform`, `build_report`,
-   `s3geo.query()`, `LLMQuerySpecGenerator`) is inherited from the Vienna
-   study's 0.2.x notes and **unverified against 0.3.0** — nobody has been
-   able to read the package from this repo yet. Read its source first and
-   correct the plan; `zonal_statistics` in particular may be the wrong
-   operation for counting points inside polygons.
+**Check `paper/PLAN.md`'s phase table and the actual contents of `data/`
+and `results/` before assuming anything above is still current; this file
+is not updated every session.**
+
+## Verified against 0.3.0 source (2026-09-19) — corrections to the plan
+
+Read directly from `github.com/arazshah/smart_spatial_system` at tag
+`v0.3.0` (`orchestrator/planning/op_catalog.py` is the ground truth for
+every planner-reachable operation name):
+
+- `crs_transform`, `spatial_nearest` (`nearest_neighbor` is a confirmed
+  alias), `score_features`, `rank_features`, `build_report`,
+  `filter_points_in_polygon`, `spatial_join` are all real.
+- **`zonal_statistics` is wrong for this study** — confirmed
+  raster-over-polygon (`calculate_zonal_statistics`, takes a `raster`
+  input). Use `filter_points_in_polygon` or `spatial_join` to count
+  hospitals per mahalle instead. See `paper/PLAN.md` Arm 1 step 3.
+- **`dissolve_features` exists as a plugin capability but is not in
+  `OP_CATALOG`**, so `s3geo.query()`/`QuerySpec` planning can never produce
+  it — only Arm 1, calling the plugin directly, can dissolve. This is a
+  structural asymmetry between the two arms, not a bug; name it in the
+  paper. See `paper/PLAN.md` Arm 1 step 5.
+- `s3geo.query(raw_query, *, layers, context=None, system_hints=None)` is
+  real and new in 0.3.0 (`s3geo/__init__.py`) — use it for Arm 2 rather than
+  wiring the five underlying classes by hand (that manual path, from the
+  Vienna study's 0.2.x notes, still works but is no longer the documented
+  entry point). Don't confuse it with `orchestrator/llm_intent_planner.py`,
+  an older/separate planning path used by a different REST-API-facing flow
+  — out of scope here, and the one place `dissolve_features` actually is
+  reachable, for context.
+- Not yet checked: whether Vienna's candidate CRS-mismatch bug still exists
+  at 0.3.0. The nearest-neighbour op's own param docstring claims passing
+  `source_crs`+`target_crs` makes it raise instead of silently computing
+  nonsense — verify this by deliberately triggering it before trusting it.
 
 ## Layout
 

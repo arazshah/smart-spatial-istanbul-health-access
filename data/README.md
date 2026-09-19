@@ -17,7 +17,7 @@ metropolitan-core definitions.
 | AOI | İstanbul Province, `admin_level=4` in OSM |
 | OSM name tag | `İstanbul` (Turkish dotted capital **İ**, U+0130 — not ASCII `I`) |
 | Approx. bbox (WGS 84) | 27.95 – 29.96 E, 40.80 – 41.68 N |
-| Units of analysis | *mahalle* (neighbourhood), ~960 expected — `admin_level` **unconfirmed, see caveat 6** |
+| Units of analysis | *mahalle* (neighbourhood), `admin_level=8` — **confirmed against the live database 2026-09-19, see caveat 6** (964 relations fetched) |
 | Source CRS | EPSG:4326 |
 | **Analysis CRS** | **EPSG:32635** — WGS 84 / UTM zone 35N |
 
@@ -28,6 +28,25 @@ needed. Distances are in metres, which is what the 2000 m threshold assumes.
 Anything reported in metres that was computed in EPSG:4326 is wrong by
 construction — see `CLAUDE.md`'s CRS note.
 
+## Fetched (2026-09-19)
+
+`data/raw/hospitals.geojson`: 972 features — 406 `amenity=hospital`, 566
+`amenity=clinic`. `data/raw/mahalle_boundaries.geojson`: 964 features (955
+`Polygon`, 9 `MultiPolygon`), 0 skipped by the converter. Fetched via the
+`overpass.kumi.systems` mirror — the primary `overpass-api.de` endpoint was
+unreachable this session (connection reset at the TLS layer); the mirror
+worked but is a shared public instance and returned `HTTP 504`/timeouts
+under load several times before succeeding. **A `200 OK` with a suspiciously
+small `elements` array is not proof of a real empty result** — one fetch
+attempt this session returned valid-looking JSON with zero elements for a
+query that returns 100+ elements when the server isn't congested (confirmed
+by re-running the identical query with `out count` once the server was less
+busy: 135 in a bbox probe, 126 with the exact area filter). Overpass appears
+to sometimes return a well-formed but truncated/empty response under load
+rather than a clear error. `scripts/fetch_overpass.py` retries on `429`/
+`504`, but a `200` with an unexpectedly low count should still be treated as
+suspect and re-fetched, not trusted.
+
 ## Sources
 
 Both layers come from OpenStreetMap via the
@@ -36,7 +55,7 @@ Both layers come from OpenStreetMap via the
 | Layer | File | OSM selection |
 |---|---|---|
 | Hospitals and clinics | `data/raw/hospitals.geojson` | `amenity=hospital` or `amenity=clinic`, nodes and ways, within the AOI |
-| Mahalle boundaries | `data/raw/mahalle_boundaries.geojson` | `admin_level=10` relations within the AOI (**verify the level — caveat 6**) |
+| Mahalle boundaries | `data/raw/mahalle_boundaries.geojson` | `admin_level=8` relations within the AOI — see caveat 6 |
 
 ## The exact queries
 
@@ -71,7 +90,7 @@ python scripts/overpass_to_geojson.py centers data/raw/hospitals.json data/raw/h
 ```
 [out:json][timeout:120];
 area["name"="İstanbul"]["admin_level"="4"]->.searchArea;
-relation["admin_level"="10"](area.searchArea);
+relation["admin_level"="8"](area.searchArea);
 out geom;
 ```
 
@@ -113,39 +132,34 @@ other than what this file claims. Record what actually came back in
    `amenity` value as a property through the whole pipeline so the analysis
    can be re-run hospital-only. "Nearest hospital *or* clinic" is the
    headline definition, and that choice has to be visible.
-6. **⚠️ `admin_level=10` for mahalle is the study brief's assumption, and
-   the evidence points the other way — verify it before anything else.**
-   Two independent OSM-derived Turkish administrative datasets map *mahalle*
-   at **`admin_level=8`**, not 10: `osadikoglu/turkey-admin-units-osm`
-   (il = 4, ilçe = 6, mahalle = 8 polygons, köy = `place=village` nodes;
-   13,793 mahalle polygons nationwide) and Geolocet's Turkey neighbourhoods
-   product, also level 8. Neither the OSM wiki's `boundary=administrative`
-   country table nor WikiProject Turkey could be read far enough to settle
-   it, and this session could not reach Overpass to check empirically — so
-   this is a strong signal, not a confirmed fact. **Settle it with real
-   data before running phase 1:**
+6. **✅ Resolved 2026-09-19, against the live database:
+   mahalle is `admin_level=8`, not the brief's 10.** Probed with
+   `python scripts/fetch_overpass.py --probe` (counts boundary relations at
+   levels 6/8/9/10 in the AOI via `out tags`, no geometry):
 
    ```
-   python scripts/fetch_overpass.py --probe
+   admin_level  count  examples
+             6     39  Adalar, Şile, Silivri
+             8    964  Kadıköy Mahallesi, Çelebi Mahallesi, Paşaköy Mahallesi
    ```
 
-   which counts boundary relations at levels 6/8/9/10 inside the AOI and
-   prints example names. The mahalle level is the one with roughly 950–1000
-   relations carrying neighbourhood-sized names (İstanbul Province has ~960
-   mahalle); `admin_level=6` should come back with ~39, the *ilçe*. Then
-   pass the answer as `--mahalle-admin-level` and record the probe output in
-   `notebooks/01_data_and_problem.ipynb`. If level 10 returns zero or a
-   handful, that is this caveat, not a broken query — and the query text
-   above should be corrected here and in `scripts/fetch_overpass.py` in the
-   same commit, with a note that it diverges from the original brief.
+   Level 6 (39 relations) is *ilçe* — matches İstanbul's well-known 39
+   districts exactly. Level 8 (964) is mahalle. Levels 9 and 10 returned
+   nothing. This confirms the two OSM-derived Turkish administrative
+   datasets that disagreed with the brief before this was checked
+   (`osadikoglu/turkey-admin-units-osm`: il=4, ilçe=6, mahalle=8; Geolocet's
+   Turkey neighbourhoods product: also 8) rather than the brief's assumed
+   10. The query above and `scripts/fetch_overpass.py`'s default were
+   corrected to 8 in the same commit as this update.
 
-   Separately: some mahalle may be missing from OSM entirely or have broken
-   rings. The converter reports skipped relations — count them rather than
-   letting them vanish, and state the coverage fraction in the paper. If OSM
-   mahalle coverage for İstanbul turns out to be materially incomplete, the
-   unit of analysis itself needs revisiting (see `paper/PLAN.md`'s open
-   decisions), because "underserved" computed over a partial set of
-   neighbourhoods is not a defensible map.
+   **The full fetch (2026-09-19) came back clean:** 964 mahalle relations,
+   955 `Polygon` + 9 `MultiPolygon`, **zero skipped by the converter** — OSM
+   mahalle coverage for İstanbul is complete enough that the "unit of
+   analysis needs revisiting" fallback below did not end up triggering.
+   Kept for the record: if a future re-fetch shows skipped relations or a
+   count that drifts far from 964, treat that as a live problem, not this
+   resolved one, and revisit the unit of analysis in `paper/PLAN.md`'s open
+   decisions before treating a partial set of neighbourhoods as a map.
 7. **Overpass rate-limits and times out.** The 120 s timeout on query 2 is
    not generous for ~1000 relations with full geometry; a 429 or a partial
    response is normal and should be retried, not worked around with a

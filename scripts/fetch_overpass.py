@@ -166,10 +166,11 @@ def main():
     ap.add_argument("--only", choices=sorted(QUERIES), help="fetch just one layer")
     ap.add_argument(
         "--mahalle-admin-level",
-        default="10",
+        default="8",
         help=(
-            "OSM admin_level for mahalle (default 10, per the study brief; "
-            "OSM Turkey may actually use 8 - run --probe first)"
+            "OSM admin_level for mahalle (default 8 - confirmed against the "
+            "live database 2026-09-19, see data/README.md caveat 6; the "
+            "study brief assumed 10, which returns nothing)"
         ),
     )
     ap.add_argument(

@@ -18,12 +18,15 @@ domain:
 
 ## Status
 
-**Phase 0 (repository skeleton) only.** Nothing has been run: `data/raw/` is
-empty and there are no results. The session that scaffolded this repo could
-reach neither `overpass-api.de` nor PyPI and had no credentials for the
-upstream package repo, so phases 1+ are blocked there — deliberately left
-blocked rather than filled with synthetic numbers. `paper/PLAN.md`'s phase
-table is the authority on what is done.
+**Phases 0–1 done (2026-09-19).** `data/raw/` has real fetched data: 972
+hospitals/clinics, 964 mahalle boundaries (`admin_level=8`, confirmed
+against the live database — see `data/README.md`). `data/processed/` is
+still empty; phase 2 onward hasn't run. The package itself can be *read*
+from a git clone of `github.com/arazshah/smart_spatial_system` but PyPI is
+still blocked here, so it can't be *installed* in this environment yet —
+see `requirements.txt` and `CLAUDE.md` → "Current state" for what that
+means for the phases ahead. `paper/PLAN.md`'s phase table is the authority
+on what is done.
 
 ## Method in one paragraph
 

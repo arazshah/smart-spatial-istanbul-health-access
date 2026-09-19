@@ -151,8 +151,8 @@ caveats and licensing in [`data/README.md`](../data/README.md).
 | # | Phase | Output | Network? | LLM key? |
 |---|---|---|---|---|
 | 0 | Repository skeleton | this repo — **DONE (2026-09-19)** | no | no |
-| 1 | Data acquisition | `data/raw/` — **DONE (2026-09-19)**: 972 hospitals/clinics, 964 mahalle | **yes** (Overpass) | no |
-| 2 | Data prep + problem definition | `notebooks/01_data_and_problem.ipynb`, `data/processed/` | no | no |
+| 1 | Data acquisition | `data/raw/` — **DONE (2026-09-19)**: 1020 hospitals/clinics, 964 mahalle (see `data/README.md` "Fetched" for the two-fetch history) | **yes** (Overpass) | no |
+| 2 | Data prep + problem definition | `notebooks/01_data_and_problem.ipynb`, `data/processed/` — **DONE (2026-09-19)**, executed on the author's own machine (real internet + installed pin) | no | no |
 | 3 | Rule-based arm | `notebooks/02_rule_based_arm.ipynb`, `results/rule_based_*.{csv,json}` | no | no |
 | 4 | LLM arm (N=20) | `notebooks/03_llm_arm.ipynb`, `results/llm_runs/` | **yes** | **yes** |
 | 5 | Comparison metric | `notebooks/04_comparison_metric.ipynb`, `results/metrics.csv` | no | no |
@@ -258,5 +258,35 @@ means for the phases ahead.
 
 ## Findings to fold into the paper's discussion/limitations
 
-*(empty — nothing has been run. Add findings here as phases complete, with
-the evidence that supports them, the way the Vienna repo's PLAN.md does.)*
+**Phase 2 (`notebooks/01_data_and_problem.ipynb`), executed 2026-09-19,
+real output — every check in the notebook passed, nothing silently
+skipped:**
+
+- Loaded 1020 hospitals/clinics (421 hospital, 599 clinic — see
+  `data/README.md` "Fetched" for why this differs from the phase-1 count)
+  and 964 mahalle (955 Polygon, 9 MultiPolygon) from `data/raw/`. Both
+  layers confirmed `EPSG:4326` on load.
+- `amenity` values are exactly `{hospital, clinic}` — the unanchored regex
+  (`data/README.md` caveat 4) did not pull in anything unexpected.
+- **Zero null geometries, zero invalid mahalle rings, zero unnamed
+  mahalle** — the data needed no repair beyond the `buffer(0)` safety net
+  (which found nothing to fix).
+- Both layers reprojected to `EPSG:32635` individually and asserted;
+  `mahalle`'s bounds in the metric CRS (`x: 581527–748500`,
+  `y: 4519307–4604146`) are sane for İstanbul in UTM 35N — the
+  reprojection-sanity check this repo's CLAUDE.md asks for (after the
+  Vienna sibling's CRS-mismatch history) passed on the first real run.
+- **9 mahalle have a centroid that falls outside their own polygon**:
+  Mimar Kemalettin, Fatih, Orhanlı, Malkoçoğlu, Şamlar, **Kınalıada**,
+  Maden, Esenkent, Karaburun. Kınalıada is literally one of the Princes'
+  Islands — an island mahalle with an irregular/multi-part coastline is
+  exactly the shape where a polygon centroid can land outside the polygon
+  (or in the sea next to it). Not a bug; name these nine explicitly if the
+  paper's methodology uses centroid distance, since their centroid-based
+  distance to the nearest hospital may not mean what it looks like it
+  means.
+- `data/processed/hospitals.geojson` (1020 features) and
+  `data/processed/mahalle.geojson` (964 features) written in `EPSG:32635`,
+  spot-checked: CRS block reads `EPSG::32635`, sample coordinates are
+  6-digit easting/northing in metres (not degrees), `osm_id` retained on
+  every feature for ODbL attribution.

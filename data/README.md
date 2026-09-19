@@ -28,24 +28,42 @@ needed. Distances are in metres, which is what the 2000 m threshold assumes.
 Anything reported in metres that was computed in EPSG:4326 is wrong by
 construction — see `CLAUDE.md`'s CRS note.
 
-## Fetched (2026-09-19)
+## Fetched
 
-`data/raw/hospitals.geojson`: 972 features — 406 `amenity=hospital`, 566
-`amenity=clinic`. `data/raw/mahalle_boundaries.geojson`: 964 features (955
-`Polygon`, 9 `MultiPolygon`), 0 skipped by the converter. Fetched via the
-`overpass.kumi.systems` mirror — the primary `overpass-api.de` endpoint was
-unreachable this session (connection reset at the TLS layer); the mirror
-worked but is a shared public instance and returned `HTTP 504`/timeouts
-under load several times before succeeding. **A `200 OK` with a suspiciously
-small `elements` array is not proof of a real empty result** — one fetch
-attempt this session returned valid-looking JSON with zero elements for a
-query that returns 100+ elements when the server isn't congested (confirmed
-by re-running the identical query with `out count` once the server was less
-busy: 135 in a bbox probe, 126 with the exact area filter). Overpass appears
-to sometimes return a well-formed but truncated/empty response under load
-rather than a clear error. `scripts/fetch_overpass.py` retries on `429`/
-`504`, but a `200` with an unexpectedly low count should still be treated as
-suspect and re-fetched, not trusted.
+Two separate real fetches on 2026-09-19, from two different environments —
+kept both because OSM is a live, continuously-edited database and the
+difference between them is itself informative, not noise:
+
+- **First fetch**, from a network-restricted cloud sandbox, via the
+  `overpass.kumi.systems` mirror (the primary `overpass-api.de` endpoint was
+  unreachable there — connection reset at the TLS layer; the mirror worked
+  but is a shared public instance and returned `HTTP 504`/timeouts under
+  load several times before succeeding): **972** hospitals/clinics (406
+  `amenity=hospital`, 566 `amenity=clinic`), **964** mahalle (955 `Polygon`,
+  9 `MultiPolygon`), 0 skipped by the converter. **A `200 OK` with a
+  suspiciously small `elements` array is not proof of a real empty
+  result** — one attempt this fetch returned valid-looking JSON with zero
+  elements for a query that returns 100+ when the server isn't congested
+  (confirmed by re-running with `out count` once less busy: 135 in a bbox
+  probe, 126 with the exact area filter). Overpass can return a well-formed
+  but truncated/empty response under load rather than a clear error.
+  `scripts/fetch_overpass.py` retries on `429`/`504`, but an unexpectedly
+  low count on a `200` should still be treated as suspect, not trusted.
+- **Second fetch**, re-run directly against `overpass-api.de` from the
+  paper author's own machine (normal internet, no proxy involved): **1020**
+  hospitals/clinics (421 `amenity=hospital`, 599 `amenity=clinic`), **964**
+  mahalle (955 `Polygon`, 9 `MultiPolygon` — identical breakdown to the
+  first fetch). **This is the fetch `data/raw/` and `data/processed/`
+  currently hold**, and the one `notebooks/01_data_and_problem.ipynb`'s
+  executed output reflects.
+
+The **mahalle count is identical between the two fetches** (administrative
+boundaries change rarely) while the **hospital/clinic count grew by 48**
+(individual facility points get added/edited far more often) — consistent
+with genuine OSM activity between the two fetch times, not a bug in either
+run. Report `data/raw/`'s actual current count in the paper rather than
+either number above; re-run `notebooks/01_data_and_problem.ipynb`'s summary
+cell and copy its live output if regenerating this file.
 
 ## Sources
 

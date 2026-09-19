@@ -76,11 +76,18 @@ Concretely, in this repository:
 
 ## Current state
 
-**Phase 0 (skeleton) and Phase 1 (data acquisition) are done (2026-09-19).**
-`data/raw/` has 972 hospitals/clinics (406 hospital, 566 clinic) and 964
-mahalle boundaries (955 Polygon, 9 MultiPolygon, 0 skipped) — see
-`data/README.md` "Fetched". `data/processed/` is still empty; Phase 2
-(`notebooks/01_data_and_problem.ipynb`) has not run.
+**Phases 0–2 are done (2026-09-19).** `data/raw/` has 1020 hospitals/clinics
+(421 hospital, 599 clinic) and 964 mahalle boundaries (955 Polygon, 9
+MultiPolygon) — see `data/README.md` "Fetched" for why the hospital count
+differs from an earlier same-day fetch (OSM is live, not a bug). Phase 2
+(`notebooks/01_data_and_problem.ipynb`) ran clean end to end on the paper
+author's own machine — every sanity check passed (0 null/invalid
+geometries, 0 unnamed mahalle, CRS asserted after every reprojection) — and
+wrote `data/processed/hospitals.geojson` (1020 features) and
+`data/processed/mahalle.geojson` (964 features), both `EPSG:32635`. See
+`paper/PLAN.md`'s "Findings" for the full real output, including the 9
+mahalle whose centroid falls outside their own polygon (island/irregular
+shapes — named there, not a bug).
 
 **Three environment facts, current as of 2026-09-19, likely to still matter
 next session:**

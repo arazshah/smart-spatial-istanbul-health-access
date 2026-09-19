@@ -1,0 +1,23 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Raw downloaded data: large, re-downloadable, and licensed differently from
+# this repo's code (ODbL, not MIT) - see data/README.md for the exact
+# Overpass queries and how to regenerate. data/processed/ (small, derived
+# GeoJSON actually fed into the system) IS committed, so it is not listed
+# here.
+data/raw/*
+!data/raw/.gitkeep
+
+# smart_spatial_system runtime output, if run locally against this repo's data
+# (var/ is that project's default runtime directory)
+var/

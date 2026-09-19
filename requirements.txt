@@ -1,0 +1,41 @@
+# Pinned to an exact smart-spatial-system release so results in this
+# repository stay reproducible as that project keeps developing. Bump this
+# deliberately - say in the commit message which upstream release it moves
+# to and which bugs/ report it closes, and re-run every phase whose outputs
+# could change. Never loosen it to ">=" for day-to-day work.
+#
+# INSTALL SOURCE (2026-09-19): 0.3.0 was NOT resolvable from PyPI in the
+# session that scaffolded this repo - `pip index versions
+# smart-spatial-system` returned "no matching distribution", and pypi.org
+# itself was blocked by that session's egress policy, so a negative result
+# there is not proof it is unpublished. Its sibling repo pinned 0.2.2 from
+# a tagged commit rather than PyPI. If the plain pin below does not
+# resolve, install from the tag instead and leave the pin line as the
+# record of the intended version:
+#
+#   pip install "smart-spatial-system[raster,pdf] @ git+https://github.com/arazshah/smart_spatial_system.git@v0.3.0"
+#
+# Delete this note once `pip install -r requirements.txt` works unmodified.
+smart-spatial-system==0.3.0
+
+# Required by the task spec, and used directly by the data-prep and
+# rule-based phases.
+geopandas
+requests
+
+# Notebook environment
+jupyterlab>=4.0
+ipykernel>=6.29
+
+# Analysis
+pandas>=2.2
+numpy>=1.26
+scipy>=1.13          # spearmanr for the Rank Stability metric
+
+# Mapping / plotting
+matplotlib>=3.8
+folium>=0.16
+
+# The LLM arm needs nothing beyond what smart-spatial-system already pulls
+# in (its own OpenAI-compatible client) - no extra client library required.
+python-dotenv>=1.0

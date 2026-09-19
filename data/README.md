@@ -17,7 +17,7 @@ metropolitan-core definitions.
 | AOI | İstanbul Province, `admin_level=4` in OSM |
 | OSM name tag | `İstanbul` (Turkish dotted capital **İ**, U+0130 — not ASCII `I`) |
 | Approx. bbox (WGS 84) | 27.95 – 29.96 E, 40.80 – 41.68 N |
-| Units of analysis | *mahalle* (neighbourhood), `admin_level=10`, ~960 expected |
+| Units of analysis | *mahalle* (neighbourhood), ~960 expected — `admin_level` **unconfirmed, see caveat 6** |
 | Source CRS | EPSG:4326 |
 | **Analysis CRS** | **EPSG:32635** — WGS 84 / UTM zone 35N |
 
@@ -36,7 +36,7 @@ Both layers come from OpenStreetMap via the
 | Layer | File | OSM selection |
 |---|---|---|
 | Hospitals and clinics | `data/raw/hospitals.geojson` | `amenity=hospital` or `amenity=clinic`, nodes and ways, within the AOI |
-| Mahalle boundaries | `data/raw/mahalle_boundaries.geojson` | `admin_level=10` relations within the AOI |
+| Mahalle boundaries | `data/raw/mahalle_boundaries.geojson` | `admin_level=10` relations within the AOI (**verify the level — caveat 6**) |
 
 ## The exact queries
 
@@ -113,11 +113,39 @@ other than what this file claims. Record what actually came back in
    `amenity` value as a property through the whole pipeline so the analysis
    can be re-run hospital-only. "Nearest hospital *or* clinic" is the
    headline definition, and that choice has to be visible.
-6. **`admin_level=10` is mahalle in Turkey**, with `admin_level=6` being
-   *ilçe* (district). Expect roughly 950–1000 mahalle for the province; a
-   count far from that means the level or the area is wrong. Some mahalle
-   may be missing or have broken rings in OSM — the converter reports
-   skipped relations, so count them rather than letting them vanish.
+6. **⚠️ `admin_level=10` for mahalle is the study brief's assumption, and
+   the evidence points the other way — verify it before anything else.**
+   Two independent OSM-derived Turkish administrative datasets map *mahalle*
+   at **`admin_level=8`**, not 10: `osadikoglu/turkey-admin-units-osm`
+   (il = 4, ilçe = 6, mahalle = 8 polygons, köy = `place=village` nodes;
+   13,793 mahalle polygons nationwide) and Geolocet's Turkey neighbourhoods
+   product, also level 8. Neither the OSM wiki's `boundary=administrative`
+   country table nor WikiProject Turkey could be read far enough to settle
+   it, and this session could not reach Overpass to check empirically — so
+   this is a strong signal, not a confirmed fact. **Settle it with real
+   data before running phase 1:**
+
+   ```
+   python scripts/fetch_overpass.py --probe
+   ```
+
+   which counts boundary relations at levels 6/8/9/10 inside the AOI and
+   prints example names. The mahalle level is the one with roughly 950–1000
+   relations carrying neighbourhood-sized names (İstanbul Province has ~960
+   mahalle); `admin_level=6` should come back with ~39, the *ilçe*. Then
+   pass the answer as `--mahalle-admin-level` and record the probe output in
+   `notebooks/01_data_and_problem.ipynb`. If level 10 returns zero or a
+   handful, that is this caveat, not a broken query — and the query text
+   above should be corrected here and in `scripts/fetch_overpass.py` in the
+   same commit, with a note that it diverges from the original brief.
+
+   Separately: some mahalle may be missing from OSM entirely or have broken
+   rings. The converter reports skipped relations — count them rather than
+   letting them vanish, and state the coverage fraction in the paper. If OSM
+   mahalle coverage for İstanbul turns out to be materially incomplete, the
+   unit of analysis itself needs revisiting (see `paper/PLAN.md`'s open
+   decisions), because "underserved" computed over a partial set of
+   neighbourhoods is not a defensible map.
 7. **Overpass rate-limits and times out.** The 120 s timeout on query 2 is
    not generous for ~1000 relations with full geometry; a 429 or a partial
    response is normal and should be retried, not worked around with a

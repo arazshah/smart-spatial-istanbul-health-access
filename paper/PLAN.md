@@ -161,6 +161,25 @@ source.
 
 ## Open decisions
 
+- **⚠️ The mahalle `admin_level` is not settled, and phase 1 cannot start
+  until it is.** The brief specifies `admin_level=10`; two independent
+  OSM-derived Turkish datasets use `admin_level=8` for mahalle. Run
+  `python scripts/fetch_overpass.py --probe` and let the database decide —
+  see `data/README.md` caveat 6. If OSM's mahalle coverage for İstanbul is
+  materially incomplete at whichever level is correct, the unit of analysis
+  has to be reconsidered (ilçe at level 6, ~39 units, is the obvious
+  fallback, at a real cost in resolution) — decide that explicitly rather
+  than quietly mapping a partial set.
+- **Every `smart_spatial_system` API name in this plan is unverified against
+  0.3.0.** `nearest_neighbor`, `zonal_statistics`, `crs_transform`,
+  `build_report`, `s3geo.query()`, `LLMQuerySpecGenerator` are carried over
+  from the Vienna study's 0.2.x notes; the session that wrote this plan had
+  no read access to the package. In particular `zonal_statistics` is a
+  raster-over-polygon operation in most spatial stacks, and counting
+  *points* inside polygons may want a different operation entirely. Confirm
+  the operation names and signatures against 0.3.0's source before writing
+  arm 1, and correct this plan in the same commit.
+
 - **N and temperature.** N=20 at 0.1, inherited from the Vienna study.
   Revisit once early variance is visible — a set-valued output may be more
   or less stable than a ranking, which is an open empirical question.

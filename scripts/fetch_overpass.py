@@ -36,6 +36,13 @@ DEFAULT_ENDPOINT = "https://overpass-api.de/api/interpreter"
 # matches ["name"=...] as an exact string; ASCII "Istanbul" resolves to no
 # area and both queries come back with zero elements. See data/README.md
 # caveat 1.
+MAHALLE_QUERY_TEMPLATE = """
+[out:json][timeout:120];
+area["name"="İstanbul"]["admin_level"="4"]->.searchArea;
+relation["admin_level"="{admin_level}"](area.searchArea);
+out geom;
+""".strip()
+
 QUERIES = {
     "hospitals": """
 [out:json][timeout:60];
@@ -46,13 +53,26 @@ area["name"="İstanbul"]["admin_level"="4"]->.searchArea;
 );
 out center;
 """.strip(),
-    "mahalle_boundaries": """
+    # NOTE: admin_level=10 is the level named in this study's brief and is
+    # kept as the default so the documented query and the code agree. But
+    # OSM-derived Turkish datasets map mahalle at admin_level=**8**, not 10
+    # - see data/README.md caveat 6, and run `--probe`, which settles it
+    # against the live database instead of against either assumption.
+    # Override with --mahalle-admin-level once probed.
+    "mahalle_boundaries": MAHALLE_QUERY_TEMPLATE.format(admin_level="10"),
+}
+
+PROBE_QUERY = """
 [out:json][timeout:120];
 area["name"="İstanbul"]["admin_level"="4"]->.searchArea;
-relation["admin_level"="10"](area.searchArea);
-out geom;
-""".strip(),
-}
+(
+  relation["admin_level"="6"](area.searchArea);
+  relation["admin_level"="8"](area.searchArea);
+  relation["admin_level"="9"](area.searchArea);
+  relation["admin_level"="10"](area.searchArea);
+);
+out tags;
+""".strip()
 
 RAW_DIR = pathlib.Path(__file__).resolve().parent.parent / "data" / "raw"
 
@@ -98,6 +118,46 @@ def fetch(endpoint, query, retries=3, backoff=30):
     raise last
 
 
+def probe(endpoint):
+    """Which admin_level actually holds Istanbul's mahalle? Ask the database.
+
+    The study brief specifies admin_level=10; OSM-derived Turkish datasets
+    use admin_level=8 for mahalle polygons. Rather than argue, count what is
+    there. ``out tags;`` keeps this cheap - no geometry is transferred.
+    """
+    try:
+        text = fetch(endpoint, PROBE_QUERY)
+        elements = json.loads(text)["elements"]
+    except Exception as e:  # noqa: BLE001
+        print(f"probe FAILED: {type(e).__name__}: {e}", file=sys.stderr)
+        return 1
+
+    counts, samples = {}, {}
+    for el in elements:
+        lvl = el.get("tags", {}).get("admin_level")
+        counts[lvl] = counts.get(lvl, 0) + 1
+        samples.setdefault(lvl, []).append(el.get("tags", {}).get("name", "?"))
+
+    if not counts:
+        print(
+            "probe returned zero relations - the AOI itself did not resolve.\n"
+            "Check the dotted I (U+0130) survived; see data/README.md caveat 1.",
+            file=sys.stderr,
+        )
+        return 1
+
+    print("admin_level  count  examples")
+    for lvl in sorted(counts, key=lambda x: (x is None, x)):
+        print(f"{str(lvl):>11}  {counts[lvl]:>5}  {', '.join(samples[lvl][:3])}")
+    print(
+        "\nThe mahalle level is the one with ~950-1000 relations carrying "
+        "neighbourhood-sized\nnames. Pass it as --mahalle-admin-level, and "
+        "record this output in\nnotebooks/01_data_and_problem.ipynb.",
+        file=sys.stderr,
+    )
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -105,11 +165,31 @@ def main():
     ap.add_argument("--endpoint", default=DEFAULT_ENDPOINT)
     ap.add_argument("--only", choices=sorted(QUERIES), help="fetch just one layer")
     ap.add_argument(
+        "--mahalle-admin-level",
+        default="10",
+        help=(
+            "OSM admin_level for mahalle (default 10, per the study brief; "
+            "OSM Turkey may actually use 8 - run --probe first)"
+        ),
+    )
+    ap.add_argument(
+        "--probe",
+        action="store_true",
+        help="count boundary relations at admin_level 6/8/9/10 in the AOI, then exit",
+    )
+    ap.add_argument(
         "--print-queries",
         action="store_true",
         help="print the queries and exit (paste into Overpass Turbo)",
     )
     args = ap.parse_args()
+
+    QUERIES["mahalle_boundaries"] = MAHALLE_QUERY_TEMPLATE.format(
+        admin_level=args.mahalle_admin_level
+    )
+
+    if args.probe:
+        return probe(args.endpoint)
 
     if args.print_queries:
         for name, q in QUERIES.items():

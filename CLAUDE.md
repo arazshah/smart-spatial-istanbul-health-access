@@ -89,6 +89,21 @@ around this. **Check `paper/PLAN.md`'s phase table and the actual contents
 of `data/` and `results/` before assuming anything above is still current;
 this file is not updated every session.**
 
+## Before phase 1 — two things to settle, not assume
+
+1. **The mahalle `admin_level`.** The brief says 10; the OSM evidence points
+   at 8. Run `python scripts/fetch_overpass.py --probe` and take the
+   database's answer. `data/README.md` caveat 6 has the detail. A zero-
+   element response is this, or the dotted `İ` (caveat 1) — never a reason
+   to shrink the AOI.
+2. **The package's actual API.** Every operation name in `paper/PLAN.md`
+   (`nearest_neighbor`, `zonal_statistics`, `crs_transform`, `build_report`,
+   `s3geo.query()`, `LLMQuerySpecGenerator`) is inherited from the Vienna
+   study's 0.2.x notes and **unverified against 0.3.0** — nobody has been
+   able to read the package from this repo yet. Read its source first and
+   correct the plan; `zonal_statistics` in particular may be the wrong
+   operation for counting points inside polygons.
+
 ## Layout
 
 ```

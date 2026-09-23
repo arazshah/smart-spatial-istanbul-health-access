@@ -1,0 +1,21 @@
+run_index,success,error_stage,goal,n_operations,n_crs_transform_calls,latency_s
+0,True,,Determine distance from mahalle to nearest hospital,4,2,14.742
+1,True,,Determine distance from mahalle to nearest hospital,4,2,21.134
+2,True,,Determine distance from mahalle to nearest hospital,4,2,12.722
+3,True,,Determine distance from mahalle to nearest hospital,4,2,13.289
+4,True,,Determine distance from mahalle to nearest hospital,4,2,13.385
+5,True,,Determine distance to nearest hospital for each mahalle,4,2,12.082
+6,True,,Determine distance from mahalle to nearest hospital,4,2,13.834
+7,True,,Determine distance from mahalle to nearest hospital,4,2,12.831
+8,True,,Determine distance from mahalle to nearest hospital,4,2,12.593
+9,True,,Determine distance from mahalle to nearest hospital and identify underserved mahalle,4,2,12.578
+10,True,,Determine distance from mahalle to nearest hospital,4,2,12.193
+11,True,,Determine distance from mahalle to nearest hospital,4,2,12.845
+12,True,,Determine distance from mahalle to nearest hospital,4,2,12.527
+13,True,,Determine distance from mahalle to nearest hospital,4,2,12.529
+14,True,,Determine distance from mahalle to nearest hospital,4,2,12.197
+15,True,,Determine distance from mahalle to nearest hospital,4,2,15.125
+16,True,,Determine distance from mahalle to nearest hospital,4,2,12.568
+17,True,,Determine distance from mahalle to nearest hospital,4,2,13.025
+18,True,,Determine distance from mahalle to nearest hospital,4,2,17.371
+19,True,,Determine distance to nearest hospital for each mahalle,4,2,11.912

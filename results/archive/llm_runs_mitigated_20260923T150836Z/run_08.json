@@ -1,0 +1,144 @@
+{
+  "timestamp": "2026-09-23T15:05:46.690350+00:00",
+  "raw_query": "Layers: 'hospitals' is a point layer of hospitals and clinics in Istanbul, Turkey, in EPSG:4326. 'mahalle' is a polygon layer of Istanbul neighbourhood (mahalle) boundaries, also in EPSG:4326. For each mahalle, determine how far it is from the nearest hospital or clinic, and identify which mahalle are underserved because their nearest facility is too far away.",
+  "model": "gpt-4o-mini",
+  "success": true,
+  "error_stage": null,
+  "error": null,
+  "goal": "Determine distance from mahalle to nearest hospital",
+  "operations": [
+    "crs_transform",
+    "crs_transform",
+    "spatial_nearest",
+    "filter_attribute"
+  ],
+  "output": {
+    "features": [],
+    "metadata": {
+      "source": "spatial_query_filter",
+      "loader": "spatial_query_filter",
+      "operation": "filter",
+      "input_feature_count": 798,
+      "matched_before_pagination": 0,
+      "output_feature_count": 0,
+      "where_applied": true,
+      "bbox_applied": false,
+      "bbox_mode": "intersects",
+      "geometry_types_applied": false,
+      "geometry_types": null,
+      "case_sensitive": false,
+      "sort_by": "distance_to_hospital",
+      "sort_order": "asc",
+      "limit": null,
+      "offset": 0,
+      "where_checked": 798,
+      "bbox_checked": 0,
+      "geometry_type_checked": 0,
+      "created_at": "2026-09-23T15:05:59.271998+00:00",
+      "input_type": "VectorOut",
+      "input_metadata": {
+        "source": "nearest_neighbor",
+        "loader": "nearest_neighbor",
+        "operation": "nearest_neighbor",
+        "engine_requested": "auto",
+        "engines_used": [
+          "shapely"
+        ],
+        "k": 1,
+        "max_distance": 1000.0,
+        "coordinate_precision": 6,
+        "drop_unmatched": true,
+        "include_target_geometry": false,
+        "source_crs": "EPSG:32635",
+        "target_crs": "EPSG:32635",
+        "planar_only": true,
+        "spatial_index_used": true,
+        "warning": null,
+        "source_feature_count": 964,
+        "target_feature_count": 1020,
+        "pair_count": 983280,
+        "match_count": 798,
+        "matched_source_count": 798,
+        "unmatched_source_count": 166,
+        "max_distance_excluded_count": 166,
+        "failed_pair_count": 0,
+        "dropped_unmatched_count": 166,
+        "output_feature_count": 798,
+        "created_at": "2026-09-23T15:05:59.268627+00:00",
+        "source_input_type": "VectorOut",
+        "source_input_metadata": {
+          "source": "crs_transformer",
+          "loader": "crs_transformer",
+          "operation": "crs_transform",
+          "source_crs": "EPSG:4326",
+          "target_crs": "EPSG:32635",
+          "engine_requested": "auto",
+          "engines_used": [
+            "pyproj"
+          ],
+          "coordinate_precision": 8,
+          "coordinate_transform_count": 150594,
+          "input_feature_count": 964,
+          "output_feature_count": 964,
+          "created_at": "2026-09-23T15:05:57.967987+00:00",
+          "input_geojson_type": "FeatureCollection",
+          "feature_count": 964,
+          "geometry_types": {
+            "Polygon": 955,
+            "MultiPolygon": 9
+          },
+          "bounds": {
+            "minx": 581527.03586988,
+            "miny": 4519307.13216367,
+            "maxx": 748500.91644713,
+            "maxy": 4604146.37037856
+          }
+        },
+        "target_input_type": "VectorOut",
+        "target_input_metadata": {
+          "source": "crs_transformer",
+          "loader": "crs_transformer",
+          "operation": "crs_transform",
+          "source_crs": "EPSG:4326",
+          "target_crs": "EPSG:32635",
+          "engine_requested": "auto",
+          "engines_used": [
+            "pyproj"
+          ],
+          "coordinate_precision": 8,
+          "coordinate_transform_count": 1020,
+          "input_feature_count": 1020,
+          "output_feature_count": 1020,
+          "created_at": "2026-09-23T15:05:57.467549+00:00",
+          "input_geojson_type": "FeatureCollection",
+          "feature_count": 1020,
+          "geometry_types": {
+            "Point": 1020
+          },
+          "bounds": {
+            "minx": 589201.98325346,
+            "miny": 4520294.20300891,
+            "maxx": 739706.25638052,
+            "maxy": 4585024.26143574
+          }
+        },
+        "feature_count": 798,
+        "geometry_types": {
+          "Polygon": 789,
+          "MultiPolygon": 9
+        },
+        "bounds": {
+          "minx": 581851.39524165,
+          "miny": 4519307.13216367,
+          "maxx": 744909.57733565,
+          "maxy": 4604146.37037856
+        }
+      },
+      "feature_count": 0,
+      "bounds": null,
+      "output_geometry_types": {}
+    }
+  },
+  "system_hints_used": true,
+  "latency_s": 12.593
+}

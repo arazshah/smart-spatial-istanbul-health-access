@@ -1,0 +1,21 @@
+run_index,success,error_stage,goal,n_operations,n_crs_transform_calls,latency_s
+0,True,,Determine distance from mahalle to nearest hospital and identify underserved mahalle,4,2,13.493
+1,True,,Determine distance from mahalle to nearest hospital and identify underserved mahalle,4,2,13.168
+2,True,,Determine distance from mahalle to nearest hospital and identify underserved mahalle,4,2,13.345
+3,True,,Determine distance from mahalle to nearest hospital and identify underserved mahalle,4,2,13.567
+4,True,,Determine distance from mahalle to nearest hospital and identify underserved mahalle,4,2,13.308
+5,True,,distance_to_nearest_hospital,4,2,12.613
+6,True,,Determine distance from mahalle to nearest hospital and identify underserved mahalle,4,2,13.257
+7,True,,Determine distance from mahalle to nearest hospital and identify underserved mahalle,4,2,13.369
+8,True,,Determine distance to nearest hospital for each mahalle and identify underserved areas,4,2,14.084
+9,True,,Determine distance to nearest hospital for each mahalle and identify underserved areas,4,2,14.017
+10,True,,Determine distance from mahalle to nearest hospital and identify underserved mahalle,4,2,13.718
+11,True,,Determine distance from mahalle to nearest hospital and identify underserved mahalle,4,2,14.422
+12,True,,Determine distance from mahalle to nearest hospital and identify underserved mahalle,4,2,15.472
+13,True,,Determine distance from mahalle to nearest hospital and identify underserved mahalle,4,2,17.484
+14,True,,Determine distance from mahalle to nearest hospital and identify underserved mahalle,4,2,13.038
+15,True,,Determine distance from mahalle to nearest hospital and identify underserved mahalle,4,2,14.419
+16,True,,Determine distance from mahalle to nearest hospital and identify underserved mahalle,4,2,13.134
+17,True,,Determine distance from mahalle to nearest hospital and identify underserved mahalle,4,2,13.725
+18,True,,Determine distance from mahalle to nearest hospital and identify underserved mahalle,4,2,13.212
+19,True,,Determine distance to nearest hospital for each mahalle and identify underserved areas,4,2,12.999

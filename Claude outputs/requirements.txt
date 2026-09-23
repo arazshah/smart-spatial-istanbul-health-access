@@ -1,0 +1,80 @@
+# Pinned to an exact smart-spatial-system release so results in this
+# repository stay reproducible as that project keeps developing. Bump this
+# deliberately - say in the commit message which upstream release it moves
+# to and which bugs/ report it closes, and re-run every phase whose outputs
+# could change. Never loosen it to ">=" for day-to-day work.
+#
+# BUMPED 0.3.0 -> 0.4.1 -> 0.4.2 (2026-09-19): closes bugs/002 (s3geo.query()
+# crashed on every call without rasterio installed - fixed by query()
+# defaulting to tolerant=True and plugins/ndvi_analysis.py's rasterio
+# import moving out of module top level, per CHANGELOG.md [0.4.1]) and
+# bugs/003 (planner silently passed an unrecognized operation parameter
+# straight through to the plugin instead of rejecting it at planning
+# time - fixed by query() defaulting to strict_params=True, plus a new
+# _op_param_reference() teaching the LLM prompt each operation's real
+# parameter names, mirroring the existing _op_input_roles_reference()
+# fix for input roles, per CHANGELOG.md [0.4.2]). 0.4.0 sits in between
+# and is purely additive (new s3geo.registry() export, nothing existing
+# changed - CHANGELOG.md [0.4.0]), so this is safe to take in one jump.
+# Confirmed for real by cloning github.com/arazshah/smart_spatial_system
+# at tag v0.4.2 and reading both the CHANGELOG.md entries and the actual
+# diff in s3geo/__init__.py (query() now takes strict_params: bool =
+# True, builds DeterministicPlanner(PlannerConfig(strict_params=strict_params)))
+# and orchestrator/planning/llm_spec_generator.py (_op_param_reference()
+# exists and is wired into the system prompt) directly - not taken on
+# the upstream fixer's word alone. With this fix in place, bugs/002's
+# local `pip install rasterio` mitigation is no longer required, and
+# bugs/003 had no local mitigation to begin with (see both reports'
+# "Resolution" sections).
+#
+# INSTALL SOURCE: PyPI stays blocked (403) from this session's own
+# environment, so `pip install` cannot resolve build dependencies from
+# here - this pin is verified-real but still unverified-installable in
+# this cloud environment specifically. It has installed and run cleanly
+# on the paper author's own machine at 0.3.0 and 0.4.1 already; use the
+# tag install below if the plain pin below doesn't resolve on PyPI yet
+# at 0.4.2:
+#
+#   pip install "smart-spatial-system[raster,pdf] @ git+https://github.com/arazshah/smart_spatial_system.git@v0.4.2"
+#
+# Delete this note once `pip install -r requirements.txt` has actually been
+# run successfully somewhere and the plain pin below is confirmed to work.
+smart-spatial-system==0.4.2
+
+# Pinned alongside smart-spatial-system (its own pyproject.toml only
+# requires geochat-sdk>=1.0.0, which 1.0.1 satisfies, but pin the exact
+# patch explicitly for full reproducibility - same discipline as above).
+# BUMPED 0.3.0's implicit >=1.0.0 -> ==1.0.1 (2026-09-19): closes bugs/001
+# (VectorOut.from_geopandas() crashed on datetime64 columns). Confirmed
+# for real by cloning github.com/arazshah/geochat-platform (subdirectory
+# geochat-sdk) at tag v1.0.1 and reading geochat_sdk/types/vector.py
+# directly: from_geopandas now accepts **to_json_kwargs and defaults
+# `default=str`, matching this organization's own s3geo._to_geojson_dict
+# precedent that bugs/001 cited. With this pin installed,
+# gdf_to_vectorout()'s local datetime-casting mitigation in
+# notebooks/02_rule_based_arm.ipynb is no longer required (harmless to
+# leave in place; it's a no-op once the columns are already handled
+# upstream).
+geochat-sdk==1.0.1
+
+# Required by the task spec, and used directly by the data-prep and
+# rule-based phases.
+geopandas
+requests
+
+# Notebook environment
+jupyterlab>=4.0
+ipykernel>=6.29
+
+# Analysis
+pandas>=2.2
+numpy>=1.26
+scipy>=1.13          # spearmanr for the Rank Stability metric
+
+# Mapping / plotting
+matplotlib>=3.8
+folium>=0.16
+
+# The LLM arm needs nothing beyond what smart-spatial-system already pulls
+# in (its own OpenAI-compatible client) - no extra client library required.
+python-dotenv>=1.0

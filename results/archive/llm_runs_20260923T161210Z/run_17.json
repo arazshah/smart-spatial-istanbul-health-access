@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-09-23T16:11:34.819254+00:00",
+  "raw_query": "Layers: 'hospitals' is a point layer of hospitals and clinics in Istanbul, Turkey, in EPSG:4326. 'mahalle' is a polygon layer of Istanbul neighbourhood (mahalle) boundaries, also in EPSG:4326. For each mahalle, determine how far it is from the nearest hospital or clinic, and identify which mahalle are underserved because their nearest facility is too far away.",
+  "model": "gpt-4o-mini",
+  "success": false,
+  "error_stage": "generation",
+  "error": "Operation 'spatial_nearest' (output 'mahalle_with_distance') sets max_distance_m=5000, so every feature it outputs has distance_to_nearest_hospital <= 5000 or no distance at all - but 'filter_attribute' (output 'underserved_mahalle') keeps only distance_to_nearest_hospital > 5000. The two can never both hold, so this plan always returns zero features: the features the filter is looking for are exactly the ones max_distance_m removed. Remove max_distance_m from 'spatial_nearest' and let the filter apply the threshold.",
+  "goal": null,
+  "operations": null,
+  "output": null,
+  "system_hints_used": false,
+  "smart_spatial_system_version": "0.5.5",
+  "input_data_extent": null,
+  "latency_s": 8.911
+}

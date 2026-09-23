@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-09-23T14:58:57.549994+00:00",
+  "raw_query": "Layers: 'hospitals' is a point layer of hospitals and clinics in Istanbul, Turkey, in EPSG:4326. 'mahalle' is a polygon layer of Istanbul neighbourhood (mahalle) boundaries, also in EPSG:4326. For each mahalle, determine how far it is from the nearest hospital or clinic, and identify which mahalle are underserved because their nearest facility is too far away.",
+  "model": "gpt-4o-mini",
+  "success": false,
+  "error_stage": "execution",
+  "error": "Node hospitals_metric failed: Invalid CRS transformation EPSG:4326 -> <PROJECTED_CRS>: Invalid projection: <PROJECTED_CRS>: (Internal Proj Error: proj_create: unrecognized format / unknown name)",
+  "goal": null,
+  "operations": null,
+  "output": null,
+  "system_hints_used": false,
+  "latency_s": 11.841
+}

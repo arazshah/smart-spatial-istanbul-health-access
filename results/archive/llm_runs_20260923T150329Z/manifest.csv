@@ -1,0 +1,21 @@
+run_index,success,error_stage,goal,n_operations,n_crs_transform_calls,latency_s
+0,False,execution,,0,0,11.841
+1,True,,Determine distance from mahalle to nearest hospital,4,2,12.267
+2,True,,Determine distance from mahalle to nearest hospital,4,2,12.704
+3,True,,Determine distance from mahalle to nearest hospital/clinic,4,2,14.377
+4,False,execution,,0,0,10.802
+5,False,execution,,0,0,10.985
+6,True,,Determine distance from mahalle to nearest hospital,4,2,13.055
+7,True,,Determine distance from mahalle to nearest hospital,4,2,12.175
+8,False,execution,,0,0,11.403
+9,False,execution,,0,0,10.631
+10,False,execution,,0,0,11.684
+11,False,execution,,0,0,10.782
+12,True,,Determine distance from mahalle to nearest hospital,4,2,14.334
+13,False,execution,,0,0,12.666
+14,True,,Determine distance from mahalle to nearest hospital and identify underserved areas,4,2,14.169
+15,False,execution,,0,0,11.707
+16,True,,Determine distance from mahalle to nearest hospital and identify underserved areas,4,2,13.203
+17,False,execution,,0,0,12.224
+18,False,execution,,0,0,19.654
+19,False,execution,,0,0,12.351
